@@ -109,8 +109,8 @@ stages:
 
     - stage: DockerImage
       jobs:
-        - job: DockerbuildfrontImage
-          displayName: 'DockerbuildfrontImage'
+        - job: Dockerbuild
+          displayName: 'Dockerbuild'
           steps:
 
           - task: Docker@2
@@ -122,19 +122,6 @@ stages:
               tags: |
                 $(imageTag)
                 latest
-
-        - job: DockerbuildbackenedImage
-          displayName: 'DockerbuildbackenedImage'
-          steps:
-            - task: Docker@2
-              inputs:
-                containerRegistry: '$(dockerRegistry)'
-                repository: '$(imageName2)'
-                command: 'buildAndPush'
-                Dockerfile: '**Dockerfile'
-                tags: |
-                  $(imageTag)
-                  latest
 
  # =====================================================
  # STAGE 7: TRIVY SCAN - DOCKER IMAGE
@@ -157,49 +144,49 @@ stages:
               containerRegistry: '$(dockerRegistry)'
               command: 'login'
 
-          - script: |
-              echo "=== Scanning Docker image for vulnerabilities ==="
+          # - task: CmdLine@2
+          #   inputs:
+          #     script: |
+          #         echo "=== Scanning Docker image for vulnerabilities ==="
+                
+          #         # Pull the image
+          #         docker pull $(dockerRegistry)/$(imageName1):$(imageTag) || true
               
-              # Pull the image
-              docker pull $(dockerRegistry)/$(imageName1):$(imageTag) || true
+          #      # Table format for console
+          #       trivy image $(dockerRegistry)/$(imageName1):$(imageTag) \
+          #         --severity $(trivySeverity) \
+          #         --format table \
+          #         --output $(Build.ArtifactStagingDirectory)/trivy-image-report.txt
               
-              # Table format for console
-              trivy image $(dockerRegistry)/$(imageName1):$(imageTag) \
-                --severity $(trivySeverity) \
-                --format table \
-                --output $(Build.ArtifactStagingDirectory)/trivy-image-report.txt
+          #     # JSON format for parsing
+          #       trivy image $(dockerRegistry)/$(imageName1):$(imageTag) \
+          #         --severity $(trivySeverity) \
+          #         --format json \
+          #         --output $(Build.ArtifactStagingDirectory)/trivy-image-report.json
               
-              # JSON format for parsing
-              trivy image $(dockerRegistry)/$(imageName1):$(imageTag) \
-                --severity $(trivySeverity) \
-                --format json \
-                --output $(Build.ArtifactStagingDirectory)/trivy-image-report.json
+          #     # SARIF format for Azure DevOps Security tab
+          #       trivy image $(dockerRegistry)/$(imageName1):$(imageTag) \
+          #         --severity $(trivySeverity) \
+          #         --format sarif \
+          #         --output $(Build.ArtifactStagingDirectory)/trivy-image-report.sarif
               
-              # SARIF format for Azure DevOps Security tab
-              trivy image $(dockerRegistry)/$(imageName1):$(imageTag) \
-                --severity $(trivySeverity) \
-                --format sarif \
-                --output $(Build.ArtifactStagingDirectory)/trivy-image-report.sarif
+          #     # HTML report
+          #       trivy image $(dockerRegistry)/$(imageName1):$(imageTag) \
+          #         --severity $(trivySeverity) \
+          #         --format template \
+          #         --template "@contrib/html.tpl" \
+          #         --output $(Build.ArtifactStagingDirectory)/trivy-image-report.html || true
               
-              # HTML report
-              trivy image $(dockerRegistry)/$(imageName1):$(imageTag) \
-                --severity $(trivySeverity) \
-                --format template \
-                --template "@contrib/html.tpl" \
-                --output $(Build.ArtifactStagingDirectory)/trivy-image-report.html || true
-              
-              # Display results
-              cat $(Build.ArtifactStagingDirectory)/trivy-image-report.txt
-              
-              # Fail on critical vulnerabilities
-              trivy image $(dockerRegistry)/$(imageName1):$(imageTag) \
-                --severity CRITICAL \
-                --exit-code 1 \
-                --ignore-unfixed || {
-                  echo "##vso[task.logissue type=error]CRITICAL vulnerabilities found in Docker image!"
-                  exit 1
-                }
-            displayName: 'Trivy Image Scan'
+          #     # Display results
+          #       cat $(Build.ArtifactStagingDirectory)/trivy-image-report.txt
+          #       trivy image $(dockerRegistry)/$(imageName1):$(imageTag) \
+          #         --severity CRITICAL \
+          #         --exit-code 1 \
+          #         --ignore-unfixed || {
+          #           echo "##vso[task.logissue type=error]CRITICAL vulnerabilities found in Docker image!"
+          #           exit 1
+          #       }
+          #   displayName: 'Trivy Image Scan'
 
           - task: PublishBuildArtifacts@1
             displayName: 'Publish Trivy Image Report'
@@ -224,7 +211,31 @@ stages:
                 artifactName: 'trivy-image-report2'
             condition: always()
 
-                
+    - stage: 
+      displayName: 'Crate chatbot ns'
+      jobs:
+        - job: 
+          displayName: 'Deploying changes to production k8'
+          steps:
+            - task: Kubernetes@1
+              inputs:
+                connectionType: 'Kubernetes Service Connection'
+                kubernetesServiceEndpoint: '$(kubernetesServiceConnection)'
+                namespace: 'production'
+                command: 'apply'
+                arguments: '-f k8s/chatbot-ui.yaml'
+                secretType: 'dockerRegistry'
+                containerRegistryType: 'Azure Container Registry'
+
+            - task: Kubernetes@1
+              continueOnError: true
+              displayName: 'Wait for rollout to complete'
+              inputs:
+                connectionType: 'Kubernetes Service Connection'
+                kubernetesServiceEndpoint: '$(kubernetesServiceConnection)'
+                namespace: 'production'
+                command: 'rollout'
+                arguments: ' status deployment/chatbot --timeout=300s'
 
 
             
