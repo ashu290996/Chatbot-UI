@@ -1,6 +1,28 @@
 trigger:
   none
 
+variables:
+# Docker Registry
+  dockerRegistry: 'ashudevops'
+  imageTag: '$(Build.BuildId)'
+  imageNAme1: 'ashu290996/Chabot-ui'
+  #mavenCacheFolder: $(Pipeline.Workspace)/.m2/repository
+  # SonarQube
+  sonarQubeServiceConnection: 'sonarQube'
+  sonarProjectKey: 'Chabot-ui'
+  
+  # Kubernetes
+  kubernetesServiceConnection: 'k8s-prod-connection'
+  stagingNamespace: 'staging'
+  productionNamespace: 'production'
+  
+  # Build
+  #vmImageName: 'ubuntu-latest'
+  
+  # Security Thresholds
+  trivySeverity: 'HIGH,CRITICAL'
+  owaspFailOnCVSS: 7
+
 pool:
  name: default
 
@@ -11,4 +33,44 @@ stages:
       jobs:
           - job: 
             displayName: 'Installing Nodejs'
+            steps:
+            
+            - task: NodeTool@0
+              inputs:
+                versionSource: 'spec'
+                versionSpec: '18.x'
+
+            - script: npm install
+              displayName: 'Installing dependencies'
+
+    - stage: SonarQube
+      displayName: 'SonarQube Analysis'
+      jobs:
+          - job: SonarQubeAnalysis
+            steps: 
+
+            - task: SonarQubePrepare@8
+              displayName: 'Prepare SonarQube Analysis'
+              inputs:
+                SonarQube: '$(sonarQubeServiceConnection)'
+                scannerMode: 'CLI'
+                configMode: 'manual'
+                cliProjectKey: 'Chatbot-UI'
+                cliProjectName: 'Chatbot-UI'
+                cliSources: 'Chatbot-UI'
+                  
+            - task: SonarQubeAnalyze@8
+              displayName: 'SonarQubeAnalyze'
+              inputs:
+                jdkversion: 'JAVA_HOME_21_X64'
+
+            - task: SonarQubePublish@8
+              displayName: 'SonarQubePublish'
+              continueOnError: false
+              inputs:
+                pollingTimeoutSec: '300'
+                
+
+
+            
             
