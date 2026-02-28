@@ -57,7 +57,7 @@ stages:
                 configMode: 'manual'
                 cliProjectKey: 'Chatbot-UI'
                 cliProjectName: 'Chatbot-UI'
-                cliSources: 'Chatbot-UI'
+                cliSources: '$(System.DefaultWorkingDirectory)'
                   
             - task: SonarQubeAnalyze@8
               displayName: 'SonarQubeAnalyze'
@@ -69,6 +69,20 @@ stages:
               continueOnError: false
               inputs:
                 pollingTimeoutSec: '300'
+
+    - stage:
+      displayName: 'OWASP'
+      jobs:
+        - job: 
+          steps:
+            - task: dependency-check-build-task@6
+              inputs:
+                projectName: 'Chatbot-UI'
+                scanPath: '$(System.DefaultWorkingDirectory)'
+                format: 'HTML'
+                uploadReports: true
+
+      
                 
 
 
