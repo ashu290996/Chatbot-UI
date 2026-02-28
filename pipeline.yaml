@@ -223,7 +223,7 @@ stages:
                 kubernetesServiceEndpoint: '$(kubernetesServiceConnection)'
                 namespace: 'production'
                 command: 'apply'
-                arguments: '-f k8s/chatbot-ui.yaml'
+                arguments: '-f k8s/chatbot-ui.yaml --create-namespace production'
                 secretType: 'dockerRegistry'
                 containerRegistryType: 'Azure Container Registry'
 
