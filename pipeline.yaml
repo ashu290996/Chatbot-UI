@@ -210,9 +210,23 @@ stages:
                 pathToPublish: '$(Build.ArtifactStagingDirectory)'
                 artifactName: 'trivy-image-report2'
             condition: always()
-
     - stage: 
-      displayName: 'Crate chatbot ns'
+      displayName: 'Create Production ns'
+      jobs:
+        - job: 
+          displayName: 'Create Production ns'
+          steps:
+
+            - task: Kubernetes@1
+              inputs:
+                connectionType: 'Kubernetes Service Connection'
+                kubernetesServiceEndpoint: '$(kubernetesServiceConnection)'
+                command: 'create'
+                arguments: 'ns production'
+                secretType: 'dockerRegistry'
+                containerRegistryType: 'Azure Container Registry'
+    - stage: 
+      displayName: 'Deploying changes to production k8'
       jobs:
         - job: 
           displayName: 'Deploying changes to production k8'
@@ -223,7 +237,7 @@ stages:
                 kubernetesServiceEndpoint: '$(kubernetesServiceConnection)'
                 namespace: 'production'
                 command: 'apply'
-                arguments: '-f k8s/chatbot-ui.yaml -n production --create-namespace production'
+                arguments: '-f k8s/chatbot-ui.yaml '
                 secretType: 'dockerRegistry'
                 containerRegistryType: 'Azure Container Registry'
 
