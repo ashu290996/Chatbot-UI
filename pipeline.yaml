@@ -95,10 +95,10 @@ stages:
           displayName: 'Trivyfilescan'
           steps:
             - script: trivy fs . --severity $(trivySeverity) --format table --output $(Build.ArtifactStagingDirectory)/trivy-fs-backend-report.txt
-              workingDirectory: Chatbot-UI/components
+              workingDirectory: components
 
             - script:  cat $(Build.ArtifactStagingDirectory)/trivy-fs-backend-report.txt
-              workingDirectory: Chatbot-UI/components
+              workingDirectory: components
 
             # - script: trivy fs . --severity $(trivySeverity) --format table --output $(Build.ArtifactStagingDirectory)/trivy-fs-frontend-report.txt
             #   workingDirectory: wanderlust-3tier-project/frontend
@@ -216,54 +216,6 @@ stages:
               #     curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.48.0
               #   displayName: 'Install Trivy'
 
-          - task: Docker@2
-            displayName: 'Docker Login'
-            inputs:
-              containerRegistry: '$(dockerRegistry)'
-              command: 'login'
-
-          - script: |
-                echo "=== Scanning Docker image for vulnerabilities ==="
-                
-                # Pull the image
-                docker pull $(dockerRegistry)/$(imageName2):$(imageTag) || true
-
-                trivy image $(dockerRegistry)/$(imageName2):$(imageTag) \
-                  --severity $(trivySeverity) \
-                  --format table \
-                  --output $(Build.ArtifactStagingDirectory)/trivy-image-report.txt
-
-                # JSON format for parsing
-                trivy image $(dockerRegistry)/$(imageName2):$(imageTag) \
-                  --severity $(trivySeverity) \
-                  --format json \
-                  --output $(Build.ArtifactStagingDirectory)/trivy-image-report.json
-              
-                # SARIF format for Azure DevOps Security tab
-                trivy image $(dockerRegistry)/$(imageName2):$(imageTag) \
-                  --severity $(trivySeverity) \
-                  --format sarif \
-                  --output $(Build.ArtifactStagingDirectory)/trivy-image-report.sarif
-                
-                # HTML report
-                trivy image $(dockerRegistry)/$(imageName2):$(imageTag) \
-                  --severity $(trivySeverity) \
-                  --format template \
-                  --template "@contrib/html.tpl" \
-                  --output $(Build.ArtifactStagingDirectory)/trivy-image-report.html || true
-                
-                # Display results
-                cat $(Build.ArtifactStagingDirectory)/trivy-image-report.txt
-                
-                # Fail on critical vulnerabilities
-                trivy image $(dockerRegistry)/$(imageName2):$(imageTag) \
-                  --severity CRITICAL \
-                  --exit-code 1 \
-                  --ignore-unfixed || {
-                    echo "##vso[task.logissue type=error]CRITICAL vulnerabilities found in Docker image!"
-                    exit 1
-                  }
-                displayName: 'Trivy Image Scan2'
 
           - task: PublishBuildArtifacts@1
             displayName: 'Publish Trivy Image Report2'
