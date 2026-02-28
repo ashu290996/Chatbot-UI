@@ -247,7 +247,7 @@ stages:
               inputs:
                 connectionType: 'Kubernetes Service Connection'
                 kubernetesServiceEndpoint: '$(kubernetesServiceConnection)'
-                namespace: 'production'
+                namespace: 'chatbot'
                 command: 'rollout'
                 arguments: ' status deployment/chatbot --timeout=300s'
 
