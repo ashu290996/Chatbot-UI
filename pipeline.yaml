@@ -222,7 +222,7 @@ stages:
                 connectionType: 'Kubernetes Service Connection'
                 kubernetesServiceEndpoint: '$(kubernetesServiceConnection)'
                 command: 'create'
-                arguments: 'ns production'
+                arguments: 'ns chatbot'
                 secretType: 'dockerRegistry'
                 containerRegistryType: 'Azure Container Registry'
     - stage: 
@@ -235,7 +235,7 @@ stages:
               inputs:
                 connectionType: 'Kubernetes Service Connection'
                 kubernetesServiceEndpoint: '$(kubernetesServiceConnection)'
-                namespace: 'production'
+                namespace: 'chatbot'
                 command: 'apply'
                 arguments: '-f k8s/chatbot-ui.yaml '
                 secretType: 'dockerRegistry'
