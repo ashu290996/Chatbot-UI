@@ -1,1 +1,14 @@
+trigger:
+  none
 
+pool:
+ name: default
+
+
+stages:
+    - stage: 
+      displayName: 'Installing dependencis'
+      jobs:
+          - job: 
+            displayName: 'Installing Nodejs'
+            
